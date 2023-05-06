@@ -76,14 +76,14 @@ def uploadTimetable(): #Pending
     return jsonify({"result":handler.viewTimetable(userId,data)})
 
 @app.route('/feedback', methods =['POST','GET'])
-def uploadFeedback(): #Pending
+def uploadFeedback(): #Done
     if request.method == 'POST':
         userId = request.json['user_id']
         courseId = request.json['course_id']
         feedback = request.json ['feedback']
         return jsonify({"result":handler.uploadFeedback(userId,courseId,feedback)})
     if request.method == 'GET':
-        userId = request.jargs.get('user_id')         
+        userId = request.args.get('user_id')         
         return jsonify({"result":handler.getStudentBatchCourseDetails(userId)}) 
 
 @app.route('/uploadInternalResult', methods = ['POST','GET'])
@@ -95,7 +95,7 @@ def uploadInternalResult(): #Pending
         courseId = request.json['course_id']
         return jsonify({"result":handler.uploadInternalResult(userId,data,batchId,courseId)}) 
     if request.method == 'GET':
-        userId = request.jargs.get('user_id')         
+        userId = request.args.get('user_id')         
         return jsonify({"result":handler.getFacultyBatchCourseDetails(userId)})
 
 @app.route('/uploadExternalResult', methods = ['POST', 'GET'])
@@ -118,7 +118,7 @@ def uploadNotice(): #Done
         noticeData = request.json['notice_data']
         return jsonify({"result":handler.uploadNotice(userId,batchId,courseId,noticeData)})
     if request.method == 'GET':
-        userId = request.jargs.get('user_id')       
+        userId = request.args.get('user_id')       
         return jsonify({"result":handler.getFacultyBatchCourseDetails(userId)})
 
 @app.route('/viewNotice',methods = ['POST','GET'])
@@ -158,11 +158,11 @@ def viewAttendance(): #Pending
         courseId = request.json['course_id']
         return jsonify({"result":handler.viewAttendance(userId,courseId)})
     if request.methods == 'GET':
-        userId = request.json['user_id']
+        userId = request.args.get('user_id')
         return jsonify({"result":handler.getStudentBatchCourseDetails(userId)}) 
 
 @app.route('/editStudentDetails', methods = ['POST','GET','DELETE'])
-def updateStudentDetails(): #Pending
+def updateStudentDetails(): #Done
     if request.methods == 'POST':
         userId = request.json['user_id']
         studentId = request.json['student_id']
@@ -171,9 +171,9 @@ def updateStudentDetails(): #Pending
         name = request.json['name']
         return jsonify({"result":handler.updateStudentDetails(userId,studentId,email,dob,name)}) #This POST request will Update the student details
     if request.methods == 'GET':
-        userId = request.json['user_id']
+        userId = request.args.get('user_id')
         return jsonify({"result":handler.getFacultyStudents(userId)}) #A Faculty can change Student Details. This GET request will fetch all the students under the faculty
-    if request.methods == 'DELETE': 
+    if request.methods == 'PUT': 
         userId = request.json['user_id']
         studentId = request.json['student_id']
         return jsonify({"result":handler.deleteStudent(userId,studentId)}) #This Delete request will delete the user})
@@ -187,7 +187,7 @@ def addCourse(): #Done
         return jsonify({"result":handler.addNewCourse(userId,courseCode,courseName)}) 
     
 @app.route('/assignCourse', methods = ['POST','GET'])
-def assignCourse(): #Pending
+def assignCourse(): #Done
     if request.methods == 'POST':
         userId = request.json['user_id']
         courseCode = request.json['course_code']

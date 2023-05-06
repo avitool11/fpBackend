@@ -360,3 +360,203 @@ def uploadFeedback(userId, courseId, feedback):
   except:
     return False
   
+def getAllCourses(userId):
+  d = checkRole(userId,"admin")
+  if d == False:
+    return "User Must be Admin"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "SELECT * from course"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    result = []
+    for row in rows:
+      j = {}
+      j['course_id'] = row[0]
+      j['course_code'] = row[1]
+      j['course_name'] = row[2]
+      result.append(j)
+    cur.close()
+    conn.close()
+    return result
+  except Exception as e:
+    print(e)
+    cur.close()
+    conn.close()
+    return False
+
+def assignCourse(userId,courseId,facultyId):
+  d = checkRole(userId,"admin")
+  if d == False:
+    return "User must be admin"
+  facultyCourse = getFacultyBatchCourseDetails(facultyId)
+  courseDetails = facultyCourse[1]
+  courseIds = []
+  for course in courseDetails:
+    courseIds.append(course["course_id"])
+  courseIds = set(courseIds)
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Update faculties set course_id = %s where user_id = %s"
+    values = (courseId,facultyId)
+    r = cur.execute(query,values)
+    conn.commit()
+    conn.close()
+    cur.close()
+    return True
+  except Exception as e:
+    return False
+  
+def getFacultyStudents(userId):
+  d = checkRole(userId,"faculty")
+  if d == False:
+    return "User must be faculty"
+  else:
+    try:
+      conn = getConnectionDetails()
+      cur = conn.cursor()
+      query = "Select * from faculties where user_id = %s"
+      values = (userId,)
+      r = cur.execute(query,values)
+      rows = cur.fetchall()
+      row = rows[0]
+      batches = row[-2]
+      students = getStudents(batches)
+      return students
+    except Exception as e:
+      print(e)
+      return False
+    
+def getStudents(batches):
+  students = []
+  for batch in batches:
+    # print(batch)
+    try:
+       conn = getConnectionDetails()
+       cur = conn.cursor()
+       query = "Select * from students where batch_id = %s"
+       values = (batch,)
+       r = cur.execute(query,values)
+       rows = cur.fetchall()
+      #  print(rows)
+       for row in rows:
+         students.append(getUserDetails(row[1]))
+       cur.close()
+       conn.close()
+       
+    except Exception as e:
+      # print(e)
+      return False
+  return students
+    
+def getUserDetails(userId):
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from user_details where id = %s"
+    values = (userId,)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    row = rows[0]
+    j = {}
+    j['user_id'] = row[0]
+    j['user_name'] = row[1]
+    j['user_email'] = row[2]
+    j['user_dob'] = row[6]
+    cur.close()
+    conn.close()
+    return j
+  except Exception as e:
+    print(e)
+    return False
+  
+def updateStudentDetails(userId,studentId,email,dob,name):
+  d = checkRole(userId,"faculty")
+  if d == False:
+    return "User must be faculty"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Update user_details set email = %s, dob = %s, name = %s where id = %s"
+    values = (email,dob,name,studentId)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e: 
+    print(e)
+    return False
+  
+def deleteStudent(userId,studentId):
+  d = checkRole(userId,"faculty")
+  if d == False:
+    return "User must be faculty"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Delete from user_details where id = %s"
+    values = (studentId,)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def getStudentBatchCourseDetails(userId):
+  d = checkRole(userId,"student")
+  if d == False:
+    return "User must be student"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from students where user_id = %s"
+    values = (userId,)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    row = rows[0]
+    batch = row[-1]
+    course = getCourseDetailsFromBatch(batch)
+    return course
+  except Exception as e:
+    print(e)
+    return False
+  
+def getCourseDetailsFromBatch(batchId):
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from batch where batch_id = %s"
+    values = (batchId,)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    courses = rows[-1]
+    courseDetails = resolveCourses(courses)
+    return courseDetails
+  except Exception as e:
+    print(e)
+    return False
+  
+def viewAttendance(userId,courseId):
+  d = checkRole(userId,"student")
+  if d == False:
+    return "User must be student"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from attendance where student_id = %s and course_id = %s"
+    values = (userId,courseId)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    row = rows[0]
+    return row
+  except Exception as e:
+    print(e)
+    return False
+  
+# print(getFacultyBatchCourseDetails(6))
