@@ -10,8 +10,6 @@ def getConnectionDetails():
     )
   return conn
 
-# conn = getConnectionDetails()
-
 def registrationHandler(name,email,password,role,dob):
   conn = getConnectionDetails()
   cur = conn.cursor()
@@ -39,7 +37,6 @@ def loginHandler(email,password):
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    # print(rows)
     if rows[0][-4] == password:
         return rows
     else:
@@ -60,7 +57,6 @@ def checkRole(userId, role):
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    # print(rows)
     if rows[0][-3] == role:
       return True
     else:
@@ -86,7 +82,6 @@ def dueApprovals():
   try:
     r = cur.execute(query,values)
     rows = cur.fetchall()
-    # print(rows)
     cur.close()
     conn.close()
     return rows
@@ -135,7 +130,6 @@ def approveUser(userId):
   conn = getConnectionDetails()
   cur = conn.cursor()
   query = "UPDATE user_details SET verified = %s WHERE id = %s"
-  # print(userId)
   values = (True,userId)
   try: 
     r = cur.execute(query,values)
@@ -157,8 +151,6 @@ def editProfile(userId,oldPassword,newPassword):
   try:
     r = cur.execute(query,values)
     rows = cur.fetchall()
-    # cur.close()
-    # conn.close()
     if rows[0][-4] == oldPassword:
       queryNew = "Update user_details SET password = %s where id = %s"
       valuesnew = (newPassword,userId)
@@ -255,7 +247,6 @@ def getSingleCourseDetails(course):
   j['course_id'] = row[0]
   j['course_code'] = row[1]
   j['course_name'] = row[2]
-
   cur.close()
   conn.close()
   return j
@@ -292,7 +283,6 @@ def viewAssignment(userId):
     except Exception as e:
       return False
 
-# def viewTimetable(userId):
 def getAllCourses(userId):
   d = checkRole(userId,"admin")
   if d == False:
@@ -317,8 +307,6 @@ def getAllCourses(userId):
     conn.close()
     return False
   
-# def assignCourse(userId, courseCode, facultyId): Define this function
-
 def addNewCourse(userId,courseCode,courseName):
   d = checkRole(userId, "admin")
   if d == False:
@@ -372,16 +360,3 @@ def uploadFeedback(userId, courseId, feedback):
   except:
     return False
   
-# def getStudentBatchCourseDetails(userId):
-#   d = checkRole(userId,"student")
-#   if d == False:
-#     return "User must be a student"
-#   try:
-#     conn = getConnectionDetails()
-#     cur = conn.cursor()
-#     query = "Select * from students where user_ud = %s"
-#     values = (userId)
-
-
-# print(approvalHandler(["3"],"2"))
-# print(loginHandler("mt09@gmail.com","manish123"))
