@@ -3,11 +3,17 @@ from flask import jsonify
 import base64
 
 def getConnectionDetails():
+  # conn = psycopg2.connect(
+  #   host="35.244.45.154",
+  #   database="final-project",
+  #   user="postgres",
+  #   password="avi2014#"
+  #   )
   conn = psycopg2.connect(
-    host="35.244.45.154",
-    database="final-project",
+    host="localhost",
+    database="adeena",
     user="postgres",
-    password="avi2014#"
+    password="2019"
     )
   return conn
 
@@ -176,7 +182,7 @@ def assignAssignment(userId, questions, batchId, courseId):
     try:
       conn = getConnectionDetails()
       cur = conn.cursor()
-      query = "Insert into assignment (description,faculty_id,batch_id,course_id) values (%s,%s,%s,%s)"
+      query = "Insert into assignment (description,faculty_id,batch,course_id) values (%s,%s,%s,%s)"
       values = (questions,userId,batchId,courseId)
       r = cur.execute(query,values)
       conn.commit()
@@ -184,6 +190,7 @@ def assignAssignment(userId, questions, batchId, courseId):
       conn.close()
       return True
     except Exception as e:
+      print(e)
       return False
 
 def getFacultyBatchCourseDetails(userId):
@@ -199,13 +206,21 @@ def getFacultyBatchCourseDetails(userId):
       r = cur.execute(query,values)
       rows = cur.fetchall()
       print(rows)
+      
       row = rows[0]
-      batches = row[-2]
-      courses = row[-1]
-      print(batches,courses)
-      batch = resolveBatches(batches)
-      course = resolveCourses(courses)
-      return (batch,course)
+      if row[-2] == None:
+        batches = {"batches":[]}
+      else:
+        batches = row[-2]
+        batches = resolveBatches(batches)
+      if row[-1] == None:
+        courses = {"courses":[]}
+      else:
+        courses = row[-1] 
+        courses = resolveCourses(courses)
+      # print(batches,courses)
+      
+      return (batches,courses)
     except Exception as e:
       print(e)
       return False
@@ -232,6 +247,7 @@ def resolveBatches(batches):
 def resolveCourses(courses):
   courseDetails = []
   for course in courses:
+    # print(course)
     j = getSingleCourseDetails(course)
     courseDetails.append(j)
   return ({"courses":courseDetails})
@@ -266,8 +282,8 @@ def viewAssignment(userId):
       rows = cur.fetchall()
       row = rows[0]
       batchId = row[-1]
-      print(batchId)
-      queryNew = "Select * from assignment where batch_id = %s"
+      # print(batchId)
+      queryNew = "Select * from assignment where batch = %s"
       valueNew = (batchId,)
       r = cur.execute(queryNew,valueNew)
       rows = cur.fetchall()
@@ -282,6 +298,7 @@ def viewAssignment(userId):
         fOutput.append(j)
       return fOutput
     except Exception as e:
+      print(e)
       return False
 
 def getAllCourses(userId):
@@ -291,8 +308,9 @@ def getAllCourses(userId):
   try:
     conn = getConnectionDetails()
     cur = conn.cursor()
-    query = "SELECT * from courses"
-    rows = query.execute()
+    query = "SELECT * from course"
+    r = cur.execute(query)
+    rows = cur.fetchall()
     result = []
     for row in rows:
       j = {}
@@ -303,7 +321,35 @@ def getAllCourses(userId):
     cur.close()
     conn.close()
     return result
-  except:
+  except Exception as e:
+    print(e)
+    cur.close()
+    conn.close()
+    return False
+  
+def getAllBatches(userId):
+  d = checkRole(userId,"admin")
+  if d == False:
+    return "User Must be Admin"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "SELECT * from batch"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    result = []
+    for row in rows:
+      j = {}
+      j['batch_id'] = row[0]
+      j['batch_code'] = row[1]
+      j['batch_name'] = row[2]
+      j['batch_courses'] = row[3]
+      result.append(j)
+    cur.close()
+    conn.close()
+    return result
+  except Exception as e:
+    print(e)
     cur.close()
     conn.close()
     return False
@@ -328,7 +374,7 @@ def addNewCourse(userId,courseCode,courseName):
 def uploadNotice(userId, batchId, courseId, noticeData):
   d = checkRole(userId,"faculty")
   if d == False:
-    return "User must be a staff"
+    return "User must be a faculty"
   try:
     conn = getConnectionDetails()
     cur = conn.cursor()
@@ -358,34 +404,35 @@ def uploadFeedback(userId, courseId, feedback):
     conn.close()
     cur.close()
     return True
-  except:
-    return False
-  
-def getAllCourses(userId):
-  d = checkRole(userId,"admin")
-  if d == False:
-    return "User Must be Admin"
-  try:
-    conn = getConnectionDetails()
-    cur = conn.cursor()
-    query = "SELECT * from course"
-    r = cur.execute(query)
-    rows = cur.fetchall()
-    result = []
-    for row in rows:
-      j = {}
-      j['course_id'] = row[0]
-      j['course_code'] = row[1]
-      j['course_name'] = row[2]
-      result.append(j)
-    cur.close()
-    conn.close()
-    return result
   except Exception as e:
     print(e)
-    cur.close()
-    conn.close()
     return False
+  
+# def getAllCourses(userId):
+#   d = checkRole(userId,"admin")
+#   if d == False:
+#     return "User Must be Admin"
+#   try:
+#     conn = getConnectionDetails()
+#     cur = conn.cursor()
+#     query = "SELECT * from course"
+#     r = cur.execute(query)
+#     rows = cur.fetchall()
+#     result = []
+#     for row in rows:
+#       j = {}
+#       j['course_id'] = row[0]
+#       j['course_code'] = row[1]
+#       j['course_name'] = row[2]
+#       result.append(j)
+#     cur.close()
+#     conn.close()
+#     return result
+#   except Exception as e:
+#     print(e)
+#     cur.close()
+#     conn.close()
+#     return False
 
 def assignCourse(userId,courseId,facultyId):
   d = checkRole(userId,"admin")
@@ -393,15 +440,63 @@ def assignCourse(userId,courseId,facultyId):
     return "User must be admin"
   facultyCourse = getFacultyBatchCourseDetails(facultyId)
   courseDetails = facultyCourse[1]
+  print(courseDetails)
+  courseDetails = courseDetails['courses']
   courseIds = []
   for course in courseDetails:
     courseIds.append(course["course_id"])
-  courseIds = set(courseIds)
+  courseIds.append(courseId)
+  # courseIds = set(courseIds)
   try:
     conn = getConnectionDetails()
     cur = conn.cursor()
     query = "Update faculties set course_id = %s where user_id = %s"
-    values = (courseId,facultyId)
+    values = (courseIds,facultyId)
+    r = cur.execute(query,values)
+    conn.commit()
+    conn.close()
+    cur.close()
+    return True
+  except Exception as e:
+    return False
+  
+def assignBatch(userId,batchId,facultyId):
+  d = checkRole(userId,"admin")
+  if d == False:
+    return "User must be admin"
+  facultyBatch = getFacultyBatchCourseDetails(facultyId)
+  # print(facultyBatch)
+  batchDetails = facultyBatch[0]
+  batchDetails = batchDetails['batches']
+  print(batchDetails)
+  batchIds = []
+  for batch in batchDetails:
+    batchIds.append(batch["batch_id"])
+  batchIds.append(batchId)
+  # batchIds = set(batchIds)
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Update faculties set batch_id = %s where user_id = %s"
+    values = (batchIds,facultyId)
+    r = cur.execute(query,values)
+    conn.commit()
+    conn.close()
+    cur.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+
+def assignBatchStudent(userId,batchId,studentId):
+  d = checkRole(userId,"staff")
+  if d == False:
+    return "User must be staff"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Update students set batch_id = %s where user_id = %s"
+    values = (batchId,studentId)
     r = cur.execute(query,values)
     conn.commit()
     conn.close()
@@ -532,11 +627,13 @@ def getCourseDetailsFromBatch(batchId):
   try:
     conn = getConnectionDetails()
     cur = conn.cursor()
-    query = "Select * from batch where batch_id = %s"
+    query = "Select * from batch where id = %s"
     values = (batchId,)
     r = cur.execute(query,values)
     rows = cur.fetchall()
-    courses = rows[-1]
+    courses = rows[0][-1]
+    if courses == None:
+      courses = []
     courseDetails = resolveCourses(courses)
     return courseDetails
   except Exception as e:
@@ -551,12 +648,16 @@ def viewAttendance(userId,courseId):
     batch_id = getStudentBatch(userId)
     conn = getConnectionDetails()
     cur = conn.cursor()
-    query = "Select * from attendance where batch_id = %s and course_id = %s"
-    values = (batch_id,courseId)
+    query = "Select * from attendance where course_id = %s"
+    values = (courseId,)
     r = cur.execute(query,values)
     rows = cur.fetchall()
     # row = rows[0]
-    return rows
+    rdl = []
+    for row in rows:
+      resultDict = {"course_id":row[1],"studentList":row[2],"attendanceList":row[3]}
+      rdl.append(resultDict)
+    return rdl
   except Exception as e:
     print(e)
     return False
@@ -568,18 +669,19 @@ def getStudentBatch(userId):
   try:
     conn = getConnectionDetails()
     cur = conn.cursor()
-    query = "Select batch_id from students where user_id = %s"
+    query = "Select * from students where user_id = %s"
     values = (userId,)
     r = cur.execute(query,values)
     rows = cur.fetchall()
     row = rows[0]
+    # print(rows)
     batch_id = row[2]
     return batch_id
   except Exception as e:
     print(e)
     return False
   
-def getResult(userId):
+def getResult(userId,courseId):
   d = checkRole(userId,"student")
   if d == False:
     return "User must be student"
@@ -587,25 +689,35 @@ def getResult(userId):
     conn = getConnectionDetails()
     cur = conn.cursor()
     batch_id = getStudentBatch(userId)
-    courseId = getStudentBatchCourseDetails(userId)
+    # print(batch_id,courseId)
     query = "Select * from result where batch_id = %s and course_id = %s"
     values = (batch_id,courseId)
     r = cur.execute(query,values)
     rows = cur.fetchall()
-    return rows
+    rows1 = []
+    
+    for row in rows:
+      bytea_data = row[1].tobytes()
+      base64_data = base64.b64encode(bytea_data)
+      row = list(row)
+      row[1] = base64_data.decode()
+      resultDict = {"resultImage":row[1],"batchId": row[2],"courseId": row[3], "isExternal": row[4]}
+      rows1.append(resultDict)
+    # print(rows)
+    return rows1
   except Exception as e:
     print(e)
     return False
   
-def uploadAttendance(userId,batch_id,course_id,date,students_list,attendance_list):
+def uploadAttendance(userId,course_id,date,students_list,attendance_list):
   d = checkRole(userId,"faculty")
   if d == False:
     return "User must be faculty"
   try:
     conn = getConnectionDetails()
     cur = conn.cursor()
-    query = "Insert into attendance (batch_id, course_id, date, students_list, attendance_list) VALUES (%s, %s, %s, %s, %s)"
-    values = (batch_id, course_id, date, students_list, attendance_list)
+    query = "Insert into attendance (course_id, date, student_list, attendance_list) VALUES ( %s, %s, %s, %s)"
+    values = (course_id, date, students_list, attendance_list)
     r = cur.execute(query,values)
     conn.commit()
     cur.close()
@@ -649,7 +761,11 @@ def viewNotice(batchId,courseId):
     values = (batchId,courseId)
     r = cur.execute(query,values)
     rows = cur.fetchall()
-    return rows
+    rdl = []
+    for row in rows:
+      resultDict = {"course_id":row[2],"notice":row[1],"batchId":row[3]}
+      rdl.append(resultDict)
+    return rdl
   except Exception as e:
     print(e)
     return False
@@ -692,7 +808,7 @@ def uploadInternalResult(userId, data,batchId,courseId):
     print(e)
     return False
   
-def uploadTimetable(userId, data,batchId,courseId):
+def uploadTimetable(userId, data,batchId):
   d = checkRole(userId,"staff")
   if d == False:
     return "User must be staff"
@@ -723,11 +839,200 @@ def viewTimetable(userId):
     values = (batchId,)
     r = cur.execute(query,values)
     rows = cur.fetchall()
+    row = rows[0]
+    bytea_data = row[1].tobytes()
+    base64_data = base64.b64encode(bytea_data)
+    row = list(row)
+    row[1] = base64_data.decode()
+    row = tuple(row)
+    resultDict = {"timetable":row[1],"batchId":row[2]}
     cur.close()
     conn.close()
-    return rows[0]
+    return resultDict
   except Exception as e:
     print(e)
     return False
   
-# print(getStudentBatchCourseDetails(4))
+def addNewBatch(userId,batch_code,batch_name):
+  d = checkRole(userId,"admin")
+  if d == False:
+    return "User must be admin"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Insert into batch (code, batch_name) VALUES (%s, %s)"
+    values = (batch_code, batch_name)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def addNewCourseToBatch(userId,batch_id,course_id):
+  d = checkRole(userId,"admin")
+  if d == False:
+    return "User must be admin"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    courses = getCourseDetailsFromBatch(batch_id)
+    courses = courses['courses']
+    cl = []
+    for course in courses:
+      cl.append(course['course_id'])
+    cl.append(course_id)
+    print(cl)
+    # cl = set(cl)
+    query = "Update batch set course_id = %s where id = %s"
+    values = (cl, batch_id)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def getAllStudentsofCourse(courseId):
+  courseId = int(courseId)
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from batch"
+    # values = (courseId,)
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    # print(rows)
+    batchIds = []
+    for row in rows:
+      if (inCourse(row[-1],courseId)):
+        batchIds.append(row[0])
+    # print(batchIds)
+    queryNew = "SELECT * FROM students WHERE batch_id = ANY(%s)"
+    valuesnew = (batchIds,) 
+    r = cur.execute(queryNew,valuesnew)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    studentIdList = []
+    for row in rows:
+      studentIdList.append(row[0])
+    # print(studentIdList)
+    return studentIdList
+  except Exception as e:
+    print(e)
+    return False
+  
+def inCourse(course,courseId):
+  if courseId in course:
+    return True
+  return False
+
+def addNewPlacementCompany(userId,companyCode,role,ctc):
+  d = checkRole(userId,"staff")
+  if d == False:
+    return "User must be staff"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Insert into placement_companies (company_name, role, ctc) VALUES (%s, %s, %s)"
+    values = (companyCode, role, ctc)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def getAllPlacementCompany():
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from placement_companies"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    result = []
+    for row in rows:
+      j = {}
+      j['company_code'] = row[0]
+      j['role'] = row[1]
+      j['ctc'] = row[2]
+      result.append(j)
+    cur.close()
+    conn.close()
+    return result
+  except Exception as e:
+    print(e)
+    return False
+  
+def addNewPlacement(userId,companyId,studentId):
+  d = checkRole(userId,"staff")
+  if d == False:
+    return "User must be staff"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Insert into placement_records (placement_id, student_id) VALUES (%s, %s)"
+    values = (companyId, studentId)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def getUserPlacements(userId):
+  d = checkRole(userId,"student")
+  if d == False:
+    return "User must be student"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from placement_records where student_id = %s"
+    values = (userId,)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    fresult = []
+    for row in rows:
+      c = resolveCompanyDetails(row[-1])
+      j = {}
+      j['company_name'] = c['company_name']
+      j['role'] = c['role']
+      j['ctc'] = c['ctc']
+      fresult.append(j)
+    cur.close()
+    conn.close()
+    return fresult
+  except Exception as e:
+    print(e)
+    return False
+  
+def resolveCompanyDetails(companyId):
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from placement_companies where id = %s"
+    values = (companyId,)
+    r = cur.execute(query,values)
+    row = cur.fetchone()
+    c = {}
+    c['company_name'] = row[2]
+    c['role'] = row[1]
+    c['ctc'] = row[3]
+    cur.close()
+    conn.close()
+    return c
+  except Exception as e:
+    print(e)
+    return False
+# print(getFacultyBatchCourseDetails(6))
+# print(getAllStudentsofCourse(1))
+# print(viewTimetable(2))
