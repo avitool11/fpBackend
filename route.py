@@ -65,15 +65,17 @@ def viewAssignment(): #Done
     return jsonify({"result":handler.viewAssignment(userId)})
 
 @app.route('/viewTimetable', methods=['GET'])
-def viewTimetable(): #Pending
+def viewTimetable(): #Done
     userId = request.json['user_id']
     return jsonify({"result":handler.viewTimetable(userId)})
 
 @app.route('/uploadTimetable', methods=['POST'])
-def uploadTimetable(): #Pending
+def uploadTimetable(): #Done
     userId = request.json['user_id']
     data = request.json['data']
-    return jsonify({"result":handler.viewTimetable(userId,data)})
+    # courseId = request.json['course_id']
+    batchId = request.json['batch_id']
+    return jsonify({"result":handler.uploadTimetable(userId,data,batchId)})
 
 @app.route('/feedback', methods =['POST','GET'])
 def uploadFeedback(): #Done
@@ -87,7 +89,7 @@ def uploadFeedback(): #Done
         return jsonify({"result":handler.getStudentBatchCourseDetails(userId)}) 
 
 @app.route('/uploadInternalResult', methods = ['POST','GET'])
-def uploadInternalResult(): #Pending
+def uploadInternalResult(): #Done
     if request.method == 'POST':
         userId = request.json['user_id']
         data = request.json['data']
@@ -99,7 +101,7 @@ def uploadInternalResult(): #Pending
         return jsonify({"result":handler.getFacultyBatchCourseDetails(userId)})
 
 @app.route('/uploadExternalResult', methods = ['POST', 'GET'])
-def uploadExternalResult(): #Pending
+def uploadExternalResult(): #Done
     if request.method == 'POST':
         userId = request.json['user_id']
         data = request.json['data']
@@ -122,7 +124,7 @@ def uploadNotice(): #Done
         return jsonify({"result":handler.getFacultyBatchCourseDetails(userId)})
 
 @app.route('/viewNotice',methods = ['POST','GET'])
-def viewNotice(): #Pending
+def viewNotice(): #Done
     if request.methods == 'POST':
         batchId = request.json['batch_id']
         courseId = request.json['course_id']
@@ -131,7 +133,7 @@ def viewNotice(): #Pending
         return jsonify({"result":handler.getAllBatchCourseDetails()}) 
 
 @app.route('/uploadAttendance',methods=['POST','GET'])
-def attendanceDetails(): #Pending
+def attendanceDetails(): #Done
     if request.methods == 'POST':
         userId = request.json['user_id']
         batchId = request.json['batch_id']
@@ -142,17 +144,17 @@ def attendanceDetails(): #Pending
         return jsonify({"result":handler.uploadAttendance(userId,batchId,courseId,date,students_list,attendace_list)})
 
     if request.methods == 'GET':
-        userId = request.json['user_id']
+        userId = request.args.get('user_id')
         return jsonify({"result":handler.getFacultyBatchCourseDetails()}) 
 
-@app.route('/viewResult',methods = ['POST','GET'])
-def resultDetails(): #Pending
+@app.route('/viewResult',methods = ['POST'])
+def resultDetails(): #Done
     if request.methods == 'POST':
         userId = request.json['user_id']
         return jsonify({"result":handler.getResult(userId)}) 
 
 @app.route('/viewAttendance', methods = ['POST','GET'])
-def viewAttendance(): #Pending
+def viewAttendance(): #Done
     if request.methods == 'POST':
         userId = request.json['user_id']
         courseId = request.json['course_id']

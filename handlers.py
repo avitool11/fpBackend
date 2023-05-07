@@ -1,5 +1,6 @@
 import psycopg2
 from flask import jsonify
+import base64
 
 def getConnectionDetails():
   conn = psycopg2.connect(
@@ -547,16 +548,186 @@ def viewAttendance(userId,courseId):
   if d == False:
     return "User must be student"
   try:
+    batch_id = getStudentBatch(userId)
     conn = getConnectionDetails()
     cur = conn.cursor()
-    query = "Select * from attendance where student_id = %s and course_id = %s"
-    values = (userId,courseId)
+    query = "Select * from attendance where batch_id = %s and course_id = %s"
+    values = (batch_id,courseId)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    # row = rows[0]
+    return rows
+  except Exception as e:
+    print(e)
+    return False
+
+def getStudentBatch(userId):
+  d = checkRole(userId,"student")
+  if d == False:
+    return "User must be student"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select batch_id from students where user_id = %s"
+    values = (userId,)
     r = cur.execute(query,values)
     rows = cur.fetchall()
     row = rows[0]
-    return row
+    batch_id = row[2]
+    return batch_id
   except Exception as e:
     print(e)
     return False
   
-# print(getFacultyBatchCourseDetails(6))
+def getResult(userId):
+  d = checkRole(userId,"student")
+  if d == False:
+    return "User must be student"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    batch_id = getStudentBatch(userId)
+    courseId = getStudentBatchCourseDetails(userId)
+    query = "Select * from result where batch_id = %s and course_id = %s"
+    values = (batch_id,courseId)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    return rows
+  except Exception as e:
+    print(e)
+    return False
+  
+def uploadAttendance(userId,batch_id,course_id,date,students_list,attendance_list):
+  d = checkRole(userId,"faculty")
+  if d == False:
+    return "User must be faculty"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Insert into attendance (batch_id, course_id, date, students_list, attendance_list) VALUES (%s, %s, %s, %s, %s)"
+    values = (batch_id, course_id, date, students_list, attendance_list)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def getAllBatchCourseDetails():
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from batch"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    result = []
+    for row in rows:
+      j = {}
+      j['batch_id'] = row[0]
+      j['batch_code'] = row[1]
+      j['batch_name'] = row[2]
+      courses = row[-1]
+      courses = resolveCourses(courses)
+      j['courses'] = courses
+      result.append(j)
+    cur.close()
+    conn.close()
+    return result
+  except Exception as e:
+    print(e)
+    cur.close()
+    conn.close()
+    return False
+  
+def viewNotice(batchId,courseId):
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from notice where batch_id = %s and course_id = %s"
+    values = (batchId,courseId)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    return rows
+  except Exception as e:
+    print(e)
+    return False
+  
+def uploadExternalResult(userId, data,batchId,courseId):
+  d = checkRole(userId,"staff")
+  if d == False:
+    return "User must be staff"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    byte_array = base64.b64decode(data.split(',')[1])
+    query = "Insert into result (batch_id, course_id, content, is_external, staff_id) VALUES (%s, %s, %s, %s, %s)"
+    values = (batchId, courseId, byte_array, True, userId)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def uploadInternalResult(userId, data,batchId,courseId):
+  d = checkRole(userId,"faculty")
+  if d == False:
+    return "User must be faculty"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    byte_array = base64.b64decode(data.split(',')[1])
+    query = "Insert into result (batch_id, course_id, content, is_external, staff_id) VALUES (%s, %s, %s, %s, %s)"
+    values = (batchId, courseId, byte_array, False, userId)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def uploadTimetable(userId, data,batchId,courseId):
+  d = checkRole(userId,"staff")
+  if d == False:
+    return "User must be staff"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    byte_array = base64.b64decode(data.split(',')[1])
+    query = "Insert into timetable (batch_id, content, staff_id) VALUES (%s, %s, %s)"
+    values = (batchId, byte_array, userId)
+    r = cur.execute(query,values)
+    conn.commit()
+    cur.close()
+    conn.close()
+    return True
+  except Exception as e:
+    print(e)
+    return False
+  
+def viewTimetable(userId):
+  d = checkRole(userId,"student")
+  if d == False:
+    return "User must be student"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    batchId = getStudentBatch(userId)
+    query = "Select * from timetable where batch_id = %s"
+    values = (batchId,)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows[0]
+  except Exception as e:
+    print(e)
+    return False
+  
+# print(getStudentBatchCourseDetails(4))
