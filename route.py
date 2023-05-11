@@ -252,5 +252,24 @@ def viewPlacement():
     if request.method == 'GET':
         userId = request.args.get('user_id')
         return jsonify({"result":handler.getUserPlacements(userId)})
+
+@app.route('/getAllStudents', methods = ['GET'])
+def getAllStudents():
+    return jsonify({"result":handler.getAllStudents()})
+
+@app.route('/getAllStudentswithoutBatch', methods = ['GET'])
+def getAllStudentswithoutBatch():
+    return jsonify({"result":handler.getAllStudentswithoutBatch()})
+
+@app.route('/getAllFaculties', methods = ['GET'])
+def getAllFaculties():
+    return jsonify({"result":handler.getAllFaculties()})
+
+@app.route('/getAllFeedbacks', methods = ['POST'])
+def getAllFeedbacks():
+    if request.method == 'POST':
+        userId = request.json['user_id']
+        return jsonify({"result":handler.getAllFeedbacks(userId)})
+    
 if __name__ == '__main__':
     app.run()

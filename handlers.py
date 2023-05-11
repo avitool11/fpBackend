@@ -3,18 +3,18 @@ from flask import jsonify
 import base64
 
 def getConnectionDetails():
-  # conn = psycopg2.connect(
-  #   host="35.244.45.154",
-  #   database="final-project",
-  #   user="postgres",
-  #   password="avi2014#"
-  #   )
   conn = psycopg2.connect(
-    host="localhost",
-    database="adeena",
+    host="35.244.45.154",
+    database="final-project",
     user="postgres",
-    password="2019"
+    password="avi2014#"
     )
+  # conn = psycopg2.connect(
+  #   host="localhost",
+  #   database="adeena",
+  #   user="postgres",
+  #   password="2019"
+  #   )
   return conn
 
 def registrationHandler(name,email,password,role,dob):
@@ -102,6 +102,21 @@ def approvalHandler(userIds, adminId):
   if d == False:
     return "USER MUST BE ADMIN"
   for userId in userIds:
+    try: 
+      conn = getConnectionDetails()
+      cur = conn.cursor()
+      query = "Select * from user_details where id = %s"
+      values = (userId,)
+      r = cur.execute(query,values)
+      rows = cur.fetchall()
+      row = rows[0]
+      if row[-2] == True:
+        return "One of the User already approved. Hit get due approvals"
+      conn.close()
+      cur.close()
+    except Exception as e:
+      print(e)
+
     g = approveUser(userId)
     h = assignTable(userId)
     if g == False :
@@ -597,6 +612,10 @@ def deleteStudent(userId,studentId):
     values = (studentId,)
     r = cur.execute(query,values)
     conn.commit()
+    query1 = "Delete from students where user_id = %s"
+    values = (studentId,)
+    r = cur.execute(query1,values)
+    conn.commit()
     cur.close()
     conn.close()
     return True
@@ -1033,6 +1052,154 @@ def resolveCompanyDetails(companyId):
   except Exception as e:
     print(e)
     return False
-# print(getFacultyBatchCourseDetails(6))
-# print(getAllStudentsofCourse(1))
-# print(viewTimetable(2))
+
+def getAllFaculties():
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from user_details where role = 'faculty'"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    
+    return rows
+  except Exception as e:
+    print(e)
+    return False
+  
+def getAllStudents():
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from user_details where role ='student'"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    return rows
+  except Exception as e:
+    print(e)
+    return False
+  
+def getAllStudentswithoutBatch():
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from students"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    studentIds = []
+    for row in rows:
+      if row[-1] == None:
+        studentIds.append(row[1])  
+  except Exception as e:
+    print(e)
+    return False
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from user_details where role ='student'"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    studentIds1 = []
+    for row in rows:
+      studentIds1.append(row[0])
+  except Exception as e:
+    print(e)
+    return False
+  studentsIds2 = list(set(studentIds) & set(studentIds1))
+  # list(studentsIds2)
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from user_details where id = ANY(%s)"
+    values = (studentsIds2,)
+    r = cur.execute(query,values)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return rows
+  except Exception as e:
+    print(e)
+    return False
+  
+def getAllFeedbacks(userId):
+  d = checkRole(userId,"admin")
+  if d == False:
+    return "User must be admin"
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from feedback"
+    result = []
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    for row in rows:
+      j = {}
+      j['feedback'] = row[1]
+      studentDetails = getStudentDetails(row[2])
+      k = {}
+      k['student_user_id'] = studentDetails[0]
+      k['student_name'] = studentDetails[1]
+      k['student_email'] = studentDetails[2]
+      k['student_batch'] = getStudentBatch(studentDetails[0])
+      courseDetails = getSingleCourseDetails((row[3]))
+      j['course_details'] = courseDetails
+      j['student_details'] = k
+      facultyId = resolveFaculty( k['student_batch'], j['course_details']['course_id'])
+      q = getFacultyDetails(facultyId)
+      j['faculty_details'] = q
+      result.append(j)
+    conn.close()
+    cur.close()
+    return (result)
+  except Exception as e:
+    print(e)
+    return False
+  
+def getStudentDetails(studentId):
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from user_details where id = %s"
+    values = (studentId,)
+    r = cur.execute(query,values)
+    row = cur.fetchone()
+    return row
+  except Exception as e:
+    print(e)
+    return False
+  
+def getFacultyDetails(facultyId):
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from user_details where id = %s"
+    values = (facultyId,)
+    r = cur.execute(query,values)
+    row = cur.fetchone()
+    k = {}
+    k['faculty_user_id'] = row[0]
+    k['faculty_name'] = row[1]
+    k['faculty_email'] = row[2]
+    return k
+  except Exception as e:
+    print(e)
+    return False
+  
+def resolveFaculty(batchId, courseId):
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from faculties"
+    r = cur.execute(query)
+    rows = cur.fetchall()
+    # print(rows)
+    for row in rows:
+      courses = row[-1]
+      batches = row[-2]
+      if courses == None or batches == None:
+        continue
+      if batchId in batches and courseId in courses:
+        return row[1]
+    return "No Faculty Found"
+  except Exception as e:
+    print(e)
+    return False
