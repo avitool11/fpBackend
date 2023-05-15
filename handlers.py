@@ -930,7 +930,7 @@ def getAllStudentsofCourse(courseId):
     for row in rows:
       if (inCourse(row[-1],courseId)):
         batchIds.append(row[0])
-    # print(batchIds)
+    print(batchIds)
     queryNew = "SELECT * FROM students WHERE batch_id = ANY(%s)"
     valuesnew = (batchIds,) 
     r = cur.execute(queryNew,valuesnew)
@@ -938,8 +938,11 @@ def getAllStudentsofCourse(courseId):
     cur.close()
     conn.close()
     studentIdList = []
+    # print(rows)
     for row in rows:
-      studentDetails = getStudentDetails(row[0])
+      # print(row)
+      studentDetails = getStudentDetails(row[1])
+      # print(studentDetails)
       k = {}
       k['student_user_id'] = studentDetails[0]
       k['student_name'] = studentDetails[1]
@@ -1217,3 +1220,5 @@ def resolveFaculty(batchId, courseId):
     return False
   
 # print(getAllPlacementCompany())
+
+print(getAllStudentsofCourse(1))
