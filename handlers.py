@@ -939,7 +939,13 @@ def getAllStudentsofCourse(courseId):
     conn.close()
     studentIdList = []
     for row in rows:
-      studentIdList.append(row[0])
+      studentDetails = getStudentDetails(row[0])
+      k = {}
+      k['student_user_id'] = studentDetails[0]
+      k['student_name'] = studentDetails[1]
+      k['student_email'] = studentDetails[2]
+      # k['student_batch'] = getStudentBatch(studentDetails[0])
+      studentIdList.append(k)
     # print(studentIdList)
     return studentIdList
   except Exception as e:
@@ -981,7 +987,8 @@ def getAllPlacementCompany():
       j = {}
       j['company_code'] = row[0]
       j['role'] = row[1]
-      j['ctc'] = row[2]
+      j['ctc'] = row[3]
+      j['company_name'] = row[2]
       result.append(j)
     cur.close()
     conn.close()
@@ -1198,8 +1205,15 @@ def resolveFaculty(batchId, courseId):
       if courses == None or batches == None:
         continue
       if batchId in batches and courseId in courses:
+        conn.close()
+        cur.close() 
         return row[1]
+    conn.close()
+    cur.close()
     return "No Faculty Found"
+    
   except Exception as e:
     print(e)
     return False
+  
+# print(getAllPlacementCompany())
