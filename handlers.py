@@ -659,7 +659,7 @@ def getCourseDetailsFromBatch(batchId):
     print(e)
     return False
   
-def viewAttendance(userId,courseId):
+def viewAttendance(userId,courseId,date):
   d = checkRole(userId,"student")
   if d == False:
     return "User must be student"
@@ -667,14 +667,23 @@ def viewAttendance(userId,courseId):
     batch_id = getStudentBatch(userId)
     conn = getConnectionDetails()
     cur = conn.cursor()
-    query = "Select * from attendance where course_id = %s"
-    values = (courseId,)
+    query = "Select * from attendance where course_id = %s and date = %s"
+    values = (courseId,date)
     r = cur.execute(query,values)
     rows = cur.fetchall()
     # row = rows[0]
     rdl = []
+    slist = []
     for row in rows:
-      resultDict = {"course_id":row[1],"studentList":row[2],"attendanceList":row[3]}
+      for ele in row[2]:
+        studentDetails = getStudentDetails(ele)
+        k = {}
+        k['student_user_id'] = studentDetails[0]
+        k['student_name'] = studentDetails[1]
+        k['student_email'] = studentDetails[2]
+        k['student_batch'] = getStudentBatch(studentDetails[0])
+        slist.append(k)
+      resultDict = {"course_id":row[1],"studentList":slist,"attendanceList":row[3]}
       rdl.append(resultDict)
     return rdl
   except Exception as e:
@@ -1218,7 +1227,26 @@ def resolveFaculty(batchId, courseId):
   except Exception as e:
     print(e)
     return False
-  
+
+def getAllDates():
+  try:
+    conn = getConnectionDetails()
+    cur = conn.cursor()
+    query = "Select * from attendance "
+    r = cur.execute(query,)
+    rows = cur.fetchall()
+    # print(rows)
+    result = []
+    for row in rows:
+        result.append(row[4])
+    cur.close()
+    conn.close()
+    return result
+  except Exception as e:
+    print(e)
+    return False
+print(viewAttendance(2,1,"16/43/2023"))
+# print(getAllDates())
 # print(getAllPlacementCompany())
 
-print(getAllStudentsofCourse(1))
+# print(getAllStudentsofCourse(1))
